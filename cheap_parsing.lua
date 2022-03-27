@@ -5,6 +5,7 @@ local table_insert = table.insert
 local next = next
 local queue = {}
 local cache = {}
+local cachedKeys = {}
 local currentQueue = 0
 local currentRaw = 1
 local istable = istable
@@ -15,18 +16,20 @@ local function RunQueue()
 
     if currentQueue then
         table_Empty(cache)
+        table_Empty(cachedKeys)
 
         local current_parse_data = queue[currentQueue]
         local parse_tbl = current_parse_data[1]
         local cback = current_parse_data[2]
 
-        for _, v in next, parse_tbl do
+        for k, v in next, parse_tbl do
+            table_insert(cachedKeys, k)
             table_insert(cache, v)
         end
 
         timer_Create('cheapParsing.Queue', .075, 0, function()
-            if cache[currentRaw] then
-                cback(currentRaw, cache[currentRaw])
+            if cachedKeys[currentRaw] and cache[currentRaw] then
+                cback(cachedKeys[currentRaw], cache[currentRaw])
                 currentRaw = currentRaw + 1
             else
                 currentRaw = 1
