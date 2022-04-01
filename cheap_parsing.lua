@@ -4,42 +4,32 @@ local table_Empty = table.Empty
 local table_insert = table.insert
 local next = next
 local queue = {}
-local cache = {}
-local cachedKeys = {}
-local currentQueue = 0
-local currentRaw = 1
+local parsingKey = 0
 local istable = istable
 local isfunction = isfunction
 
 local function RunQueue()
-    currentQueue = next(queue, currentQueue)
+    parsingKey = next(queue, parsingKey)
 
-    if currentQueue then
-        table_Empty(cache)
-        table_Empty(cachedKeys)
-
-        local current_parse_data = queue[currentQueue]
+    if parsingKey then
+        local current_parse_data = queue[parsingKey]
         local parse_tbl = current_parse_data[1]
         local cback = current_parse_data[2]
-
-        for k, v in next, parse_tbl do
-            table_insert(cachedKeys, k)
-            table_insert(cache, v)
-        end
+        local prevKey
 
         timer_Create('cheapParsing.Queue', .075, 0, function()
-            if cachedKeys[currentRaw] and cache[currentRaw] then
-                cback(cachedKeys[currentRaw], cache[currentRaw])
-                currentRaw = currentRaw + 1
+            local nextKey, val = next(parse_tbl, prevKey)
+            if nextKey and val then
+                cback(nextKey, val)
+                prevKey = nextKey
             else
-                currentRaw = 1
-                queue[currentQueue] = nil
+                queue[parsingKey] = nil
                 timer_Remove('cheapParsing.Queue')
                 RunQueue()
             end
         end)
     else
-        currentQueue = 0
+        parsingKey = 0
     end
 end
 
@@ -65,6 +55,6 @@ local function ParseTable(tbl, cback)
     end
 end
 
-CheapParsing = CheapParsing or {
+CheapTables = CheapTables or {
     ParseTable = ParseTable
 }
